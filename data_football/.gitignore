@@ -32,3 +32,5 @@ farmgo_web.egg-info/*
 celerybeat-schedule
 
 docker-compose.env
+
+database.db
