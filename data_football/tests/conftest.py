@@ -35,3 +35,8 @@ def user_public() -> dict:
     _user_public: dict = deepcopy(USER_MOCK)
     del _user_public["password"]
     return _user_public
+
+
+@pytest.fixture
+def user_delete_message(user_db: dict) -> dict:
+    return {"message": f"User [id {user_db["id"]}] deleted"}

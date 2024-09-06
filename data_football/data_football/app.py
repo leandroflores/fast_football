@@ -45,3 +45,15 @@ def update_user(user_id: int, user: UserBase):
     database[user_id - 1] = user_model
 
     return user_model
+
+
+@app.delete("/users/{user_id}", response_model=Message)
+def delete_user(user_id: int):
+    if user_id < 0 or user_id > len(database):
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="User not found"
+        )
+
+    del database[user_id - 1]
+
+    return {"message": f"User [id {user_id}] deleted"}

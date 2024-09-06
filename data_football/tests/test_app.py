@@ -42,7 +42,8 @@ def test_update_user(client: TestClient, user_db: dict):
     del user_modified["id"]
     user_modified["email"] = "mail@test.com"
 
-    user_result: dict = deepcopy(user_modified)
+    user_result: dict = deepcopy(user_db)
+    user_result["email"] = "mail@test.com"
     del user_result["password"]
 
     # Act
@@ -51,3 +52,17 @@ def test_update_user(client: TestClient, user_db: dict):
     # Assert
     assert response.status_code == HTTPStatus.OK
     assert response.json() == user_result
+
+
+def test_delete_user(
+    client: TestClient, user_db: dict, user_delete_message: str
+):
+    # Arrange
+    user_id: int = user_db["id"]
+
+    # Act
+    response: Response = client.delete(f"/users/{user_id}")
+
+    # Assert
+    assert response.status_code == HTTPStatus.OK
+    assert response.json() == user_delete_message
