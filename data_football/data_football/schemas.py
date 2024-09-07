@@ -70,3 +70,16 @@ class TeamModel(Model, TeamBase): ...
 
 class TeamList(BaseModel):
     teams: list[TeamModel]
+
+
+class RoundBase(BaseModel):
+    phase: str
+    details: str = None
+    championship: ChampionshipModel
+
+
+class RoundModel(Model, RoundBase): ...
+
+
+class RoundList(BaseModel):
+    rounds: list[RoundModel]

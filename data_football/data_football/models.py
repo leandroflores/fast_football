@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import func
-from sqlalchemy.orm import Mapped, mapped_column, registry
+from sqlalchemy import ForeignKey, func
+from sqlalchemy.orm import Mapped, mapped_column, registry, relationship
 
 table_registry: registry = registry()
 
@@ -49,6 +49,12 @@ class Championship:
         init=False, server_default=func.now()
     )
 
+    rounds: Mapped[list["Round"]] = relationship(
+        init=False,
+        back_populates="championship",
+        cascade="all, delete-orphan",
+    )
+
 
 @table_registry.mapped_as_dataclass
 class Team:
@@ -61,4 +67,24 @@ class Team:
     country: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now()
+    )
+
+
+@table_registry.mapped_as_dataclass
+class Round:
+    __tablename__ = "rounds"
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    phase: Mapped[str]
+    details: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now()
+    )
+
+    championship_id: Mapped[int] = mapped_column(
+        ForeignKey("championships.id")
+    )
+
+    championship: Mapped[Championship] = relationship(
+        init=False, back_populates="rounds"
     )

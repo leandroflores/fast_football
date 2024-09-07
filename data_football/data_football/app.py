@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from data_football.database import get_session
 from data_football.models import (
     Championship,
+    Round,
     Stadium,
     Team,
     User,
@@ -17,6 +18,9 @@ from data_football.schemas import (
     ChampionshipList,
     ChampionshipModel,
     Message,
+    RoundBase,
+    RoundList,
+    RoundModel,
     StadiumBase,
     StadiumList,
     StadiumModel,
@@ -27,22 +31,21 @@ from data_football.schemas import (
     UserList,
     UserPublic,
 )
+from data_football.utils import update_object
 
 app: FastAPI = FastAPI()
 
 
 @app.get("/", response_model=Message)
 def home():
-    return {"message": "Olá Mundo!"}
+    return {"message": "Data Football Service!"}
 
 
 @app.post("/users/", status_code=HTTPStatus.CREATED, response_model=UserPublic)
 def create_user(user: UserBase, session: Session = Depends(get_session)):
     try:
-        user_record = session.scalar(
-            select(User).where(User.email == user.email)
-        )
-        if user_record:
+        record = session.scalar(select(User).where(User.email == user.email))
+        if record:
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST,
                 detail=f"User '{user.email}' already exists",
@@ -70,10 +73,10 @@ def create_stadium(
     stadium: StadiumBase, session: Session = Depends(get_session)
 ):
     try:
-        stadium_record = session.scalar(
+        record = session.scalar(
             select(Stadium).where(Stadium.name == stadium.name)
         )
-        if stadium_record:
+        if record:
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST,
                 detail=f"Stadium '{stadium.name}' already exists",
@@ -123,12 +126,12 @@ def create_championship(
 @app.post("/teams/", status_code=HTTPStatus.CREATED, response_model=TeamModel)
 def create_team(team: TeamBase, session: Session = Depends(get_session)):
     try:
-        team_record = session.scalar(
+        record = session.scalar(
             select(Team).where(
                 (Team.name == team.name) | (Team.code == team.code)
             )
         )
-        if team_record:
+        if record:
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST,
                 detail=f"Team '{team.name} [{team.code}]' already exists",
@@ -149,6 +152,28 @@ def create_team(team: TeamBase, session: Session = Depends(get_session)):
     return new_team
 
 
+@app.post(
+    "/rounds/", status_code=HTTPStatus.CREATED, response_model=RoundModel
+)
+def create_round(round: RoundBase, session: Session = Depends(get_session)):
+    try:
+        new_round: Round = Round(
+            **round.model_dump(exclude=["championship_id"])
+        )
+
+        session.add(new_round)
+        session.commit()
+        session.refresh(new_round)
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Error to process request",
+        )
+    return new_round
+
+
 @app.get("/users/", response_model=UserList)
 def get_users(
     skip: int = 0, limit: int = 100, session: Session = Depends(get_session)
@@ -161,32 +186,69 @@ def get_users(
 
 @app.get("/stadiums/", response_model=StadiumList)
 def get_stadiums(
-    skip: int = 0, limit: int = 100, session: Session = Depends(get_session)
+    skip: int = 0,
+    limit: int = 100,
+    name: str = "",
+    country: str = "",
+    session: Session = Depends(get_session),
 ):
     stadiums: list[Stadium] = session.scalars(
-        select(Stadium).offset(skip).limit(limit)
+        select(Stadium)
+        .offset(skip)
+        .limit(limit)
+        .where(Stadium.name.contains(name) & Stadium.country.contains(country))
+        .order_by(Stadium.name)
     ).all()
     return {"stadiums": stadiums}
 
 
 @app.get("/championships/", response_model=ChampionshipList)
 def get_championships(
-    skip: int = 0, limit: int = 100, session: Session = Depends(get_session)
+    skip: int = 0,
+    limit: int = 100,
+    name: str = "",
+    country: str = "",
+    session: Session = Depends(get_session),
 ):
     championships: list[Championship] = session.scalars(
-        select(Championship).offset(skip).limit(limit)
+        select(Championship)
+        .offset(skip)
+        .limit(limit)
+        .where(
+            Championship.name.contains(name)
+            & Championship.country.contains(country)
+        )
+        .order_by(Championship.name)
     ).all()
     return {"championships": championships}
 
 
 @app.get("/teams/", response_model=TeamList)
 def get_teams(
-    skip: int = 0, limit: int = 100, session: Session = Depends(get_session)
+    skip: int = 0,
+    limit: int = 100,
+    name: str = "",
+    code: str = "",
+    session: Session = Depends(get_session),
 ):
     teams: list[Team] = session.scalars(
-        select(Team).offset(skip).limit(limit)
+        select(Team)
+        .offset(skip)
+        .limit(limit)
+        .where(Team.name.contains(name) & Team.code.contains(code))
+        .order_by(Team.name)
     ).all()
     return {"teams": teams}
+
+
+@app.get("/rounds/", response_model=RoundList)
+def get_rounds(
+    skip: int = 0, limit: int = 100, session: Session = Depends(get_session)
+):
+    rounds: list[Round] = session.scalars(
+        select(Round).offset(skip).limit(limit)
+    ).all()
+    return {"rounds": rounds}
 
 
 @app.get("/users/{user_id}", response_model=UserPublic)
@@ -194,13 +256,13 @@ def get_user(
     user_id: int,
     session: Session = Depends(get_session),
 ):
-    user_record = session.scalar(select(User).where(User.id == user_id))
-    if not user_record:
+    record = session.scalar(select(User).where(User.id == user_id))
+    if not record:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="User not found"
         )
 
-    return user_record
+    return record
 
 
 @app.get("/stadiums/{stadium_id}", response_model=StadiumModel)
@@ -208,15 +270,13 @@ def get_stadium(
     stadium_id: int,
     session: Session = Depends(get_session),
 ):
-    stadium_record = session.scalar(
-        select(Stadium).where(Stadium.id == stadium_id)
-    )
-    if not stadium_record:
+    record = session.scalar(select(Stadium).where(Stadium.id == stadium_id))
+    if not record:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Stadium not found"
         )
 
-    return stadium_record
+    return record
 
 
 @app.get("/championships/{championship_id}", response_model=ChampionshipModel)
@@ -224,15 +284,15 @@ def get_championship(
     championship_id: int,
     session: Session = Depends(get_session),
 ):
-    championship_record = session.scalar(
+    record = session.scalar(
         select(Championship).where(Championship.id == championship_id)
     )
-    if not championship_record:
+    if not record:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Championship not found"
         )
 
-    return championship_record
+    return record
 
 
 @app.get("/teams/{team_id}", response_model=TeamModel)
@@ -240,13 +300,27 @@ def get_team(
     team_id: int,
     session: Session = Depends(get_session),
 ):
-    team_record = session.scalar(select(Team).where(Team.id == team_id))
-    if not team_record:
+    record = session.scalar(select(Team).where(Team.id == team_id))
+    if not record:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND, detail="Team not found"
         )
 
-    return team_record
+    return record
+
+
+@app.get("/rounds/{round_id}", response_model=RoundModel)
+def get_round(
+    round_id: int,
+    session: Session = Depends(get_session),
+):
+    record = session.scalar(select(Round).where(Round.id == round_id))
+    if not record:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Round not found"
+        )
+
+    return record
 
 
 @app.put("/users/{user_id}", response_model=UserPublic)
@@ -254,17 +328,15 @@ def update_user(
     user_id: int, user: UserBase, session: Session = Depends(get_session)
 ):
     try:
-        user_record = session.scalar(select(User).where(User.id == user_id))
-        if not user_record:
+        record = session.scalar(select(User).where(User.id == user_id))
+        if not record:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="User not found"
             )
 
-        user_record.name = user.name
-        user_record.email = user.email
-        user_record.password = user.password
+        update_object(record, user.model_dump(exclude_unset=True))
         session.commit()
-        session.refresh(user_record)
+        session.refresh(record)
 
     except IntegrityError:
         session.rollback()
@@ -272,7 +344,7 @@ def update_user(
             HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
         )
 
-    return user_record
+    return record
 
 
 @app.put("/stadiums/{stadium_id}", response_model=StadiumModel)
@@ -282,20 +354,17 @@ def update_stadium(
     session: Session = Depends(get_session),
 ):
     try:
-        stadium_record = session.scalar(
+        record = session.scalar(
             select(Stadium).where(Stadium.id == stadium_id)
         )
-        if not stadium_record:
+        if not record:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="Stadium not found"
             )
 
-        stadium_record.name = stadium.name
-        stadium_record.capacity = stadium.capacity
-        stadium_record.city = stadium.city
-        stadium_record.country = stadium.country
+        update_object(record, stadium.model_dump(exclude_unset=True))
         session.commit()
-        session.refresh(stadium_record)
+        session.refresh(record)
 
     except IntegrityError:
         session.rollback()
@@ -303,7 +372,7 @@ def update_stadium(
             HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
         )
 
-    return stadium_record
+    return record
 
 
 @app.put("/championships/{championship_id}", response_model=ChampionshipModel)
@@ -313,23 +382,18 @@ def update_championship(
     session: Session = Depends(get_session),
 ):
     try:
-        championship_record = session.scalar(
+        record = session.scalar(
             select(Championship).where(Championship.id == championship_id)
         )
-        if not championship_record:
+        if not record:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
                 detail="Championship not found",
             )
 
-        championship_record.name = championship.name
-        championship_record.format = championship.format
-        championship_record.context = championship.context
-        championship_record.country = championship.country
-        championship_record.start_year = championship.start_year
-        championship_record.end_year = championship.end_year
+        update_object(record, championship.model_dump(exclude_unset=True))
         session.commit()
-        session.refresh(championship_record)
+        session.refresh(record)
 
     except IntegrityError:
         session.rollback()
@@ -337,7 +401,7 @@ def update_championship(
             HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
         )
 
-    return championship_record
+    return record
 
 
 @app.put("/teams/{team_id}", response_model=TeamModel)
@@ -347,18 +411,15 @@ def update_team(
     session: Session = Depends(get_session),
 ):
     try:
-        team_record = session.scalar(select(Team).where(Team.id == team_id))
-        if not team_record:
+        record = session.scalar(select(Team).where(Team.id == team_id))
+        if not record:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="Team not found"
             )
 
-        team_record.name = team.name
-        team_record.full_name = team.full_name
-        team_record.code = team.code
-        team_record.country = team.country
+        update_object(record, team.model_dump(exclude_unset=True))
         session.commit()
-        session.refresh(team_record)
+        session.refresh(record)
 
     except IntegrityError:
         session.rollback()
@@ -366,20 +427,46 @@ def update_team(
             HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
         )
 
-    return team_record
+    return record
+
+
+@app.put("/rounds/{round_id}", response_model=RoundModel)
+def update_round(
+    round_id: int,
+    round: RoundBase,
+    session: Session = Depends(get_session),
+):
+    try:
+        record = session.scalar(select(Round).where(Round.id == round_id))
+        if not record:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail="Round not found"
+            )
+
+        update_object(record, round.model_dump(exclude_unset=True))
+        session.commit()
+        session.refresh(record)
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+        )
+
+    return record
 
 
 @app.delete("/users/{user_id}", response_model=Message)
 def delete_user(user_id: int, session: Session = Depends(get_session)):
     try:
-        user_record = session.scalar(select(User).where(User.id == user_id))
+        record = session.scalar(select(User).where(User.id == user_id))
 
-        if not user_record:
+        if not record:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="User not found"
             )
 
-        session.delete(user_record)
+        session.delete(record)
         session.commit()
 
     except IntegrityError:
@@ -394,16 +481,16 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
 @app.delete("/stadiums/{stadium_id}", response_model=Message)
 def delete_stadium(stadium_id: int, session: Session = Depends(get_session)):
     try:
-        stadium_record = session.scalar(
+        record = session.scalar(
             select(Stadium).where(Stadium.id == stadium_id)
         )
 
-        if not stadium_record:
+        if not record:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND, detail="Stadium not found"
             )
 
-        session.delete(stadium_record)
+        session.delete(record)
         session.commit()
 
     except IntegrityError:
@@ -420,17 +507,17 @@ def delete_championship(
     championship_id: int, session: Session = Depends(get_session)
 ):
     try:
-        championship_record = session.scalar(
+        record = session.scalar(
             select(Championship).where(Championship.id == championship_id)
         )
 
-        if not championship_record:
+        if not record:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
                 detail="Championship not found",
             )
 
-        session.delete(championship_record)
+        session.delete(record)
         session.commit()
 
     except IntegrityError:
@@ -445,15 +532,15 @@ def delete_championship(
 @app.delete("/teams/{team_id}", response_model=Message)
 def delete_team(team_id: int, session: Session = Depends(get_session)):
     try:
-        team_record = session.scalar(select(Team).where(Team.id == team_id))
+        record = session.scalar(select(Team).where(Team.id == team_id))
 
-        if not team_record:
+        if not record:
             raise HTTPException(
                 status_code=HTTPStatus.NOT_FOUND,
                 detail="Team not found",
             )
 
-        session.delete(team_record)
+        session.delete(record)
         session.commit()
 
     except IntegrityError:
@@ -463,3 +550,26 @@ def delete_team(team_id: int, session: Session = Depends(get_session)):
         )
 
     return {"message": "Team deleted"}
+
+
+@app.delete("/rounds/{round_id}", response_model=Message)
+def delete_round(round_id: int, session: Session = Depends(get_session)):
+    try:
+        record = session.scalar(select(Round).where(Round.id == round_id))
+
+        if not record:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail="Round not found",
+            )
+
+        session.delete(record)
+        session.commit()
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+        )
+
+    return {"message": "Round deleted"}
