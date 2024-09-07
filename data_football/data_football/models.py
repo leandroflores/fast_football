@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column, registry
 
-table_registry = registry()
+table_registry: registry = registry()
 
 
 @table_registry.mapped_as_dataclass
@@ -12,8 +12,22 @@ class User:
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     name: Mapped[str]
-    email: Mapped[str]
-    password: Mapped[str] = mapped_column(unique=True)
+    email: Mapped[str] = mapped_column(unique=True)
+    password: Mapped[str]
+    created_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now()
+    )
+
+
+@table_registry.mapped_as_dataclass
+class Stadium:
+    __tablename__ = "stadiums"
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    name: Mapped[str] = mapped_column(unique=True)
+    capacity: Mapped[int]
+    city: Mapped[str]
+    country: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now()
     )
