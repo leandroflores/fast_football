@@ -9,6 +9,7 @@ from data_football.database import get_session
 from data_football.models import (
     Championship,
     Stadium,
+    Team,
     User,
 )
 from data_football.schemas import (
@@ -19,6 +20,9 @@ from data_football.schemas import (
     StadiumBase,
     StadiumList,
     StadiumModel,
+    TeamBase,
+    TeamList,
+    TeamModel,
     UserBase,
     UserList,
     UserPublic,
@@ -116,6 +120,35 @@ def create_championship(
     return new_championship
 
 
+@app.post("/teams/", status_code=HTTPStatus.CREATED, response_model=TeamModel)
+def create_team(team: TeamBase, session: Session = Depends(get_session)):
+    try:
+        team_record = session.scalar(
+            select(Team).where(
+                (Team.name == team.name) | (Team.code == team.code)
+            )
+        )
+        if team_record:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail=f"Team '{team.name} [{team.code}]' already exists",
+            )
+
+        new_team: Team = Team(**team.model_dump())
+
+        session.add(new_team)
+        session.commit()
+        session.refresh(new_team)
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Error to process request",
+        )
+    return new_team
+
+
 @app.get("/users/", response_model=UserList)
 def get_users(
     skip: int = 0, limit: int = 100, session: Session = Depends(get_session)
@@ -144,6 +177,16 @@ def get_championships(
         select(Championship).offset(skip).limit(limit)
     ).all()
     return {"championships": championships}
+
+
+@app.get("/teams/", response_model=TeamList)
+def get_teams(
+    skip: int = 0, limit: int = 100, session: Session = Depends(get_session)
+):
+    teams: list[Team] = session.scalars(
+        select(Team).offset(skip).limit(limit)
+    ).all()
+    return {"teams": teams}
 
 
 @app.get("/users/{user_id}", response_model=UserPublic)
@@ -190,6 +233,20 @@ def get_championship(
         )
 
     return championship_record
+
+
+@app.get("/teams/{team_id}", response_model=TeamModel)
+def get_team(
+    team_id: int,
+    session: Session = Depends(get_session),
+):
+    team_record = session.scalar(select(Team).where(Team.id == team_id))
+    if not team_record:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Team not found"
+        )
+
+    return team_record
 
 
 @app.put("/users/{user_id}", response_model=UserPublic)
@@ -283,6 +340,35 @@ def update_championship(
     return championship_record
 
 
+@app.put("/teams/{team_id}", response_model=TeamModel)
+def update_team(
+    team_id: int,
+    team: TeamBase,
+    session: Session = Depends(get_session),
+):
+    try:
+        team_record = session.scalar(select(Team).where(Team.id == team_id))
+        if not team_record:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND, detail="Team not found"
+            )
+
+        team_record.name = team.name
+        team_record.full_name = team.full_name
+        team_record.code = team.code
+        team_record.country = team.country
+        session.commit()
+        session.refresh(team_record)
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+        )
+
+    return team_record
+
+
 @app.delete("/users/{user_id}", response_model=Message)
 def delete_user(user_id: int, session: Session = Depends(get_session)):
     try:
@@ -354,3 +440,26 @@ def delete_championship(
         )
 
     return {"message": "Championship deleted"}
+
+
+@app.delete("/teams/{team_id}", response_model=Message)
+def delete_team(team_id: int, session: Session = Depends(get_session)):
+    try:
+        team_record = session.scalar(select(Team).where(Team.id == team_id))
+
+        if not team_record:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail="Team not found",
+            )
+
+        session.delete(team_record)
+        session.commit()
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+        )
+
+    return {"message": "Team deleted"}

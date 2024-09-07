@@ -56,3 +56,17 @@ class ChampionshipModel(Model, ChampionshipBase): ...
 
 class ChampionshipList(BaseModel):
     championships: list[ChampionshipModel]
+
+
+class TeamBase(BaseModel):
+    name: str
+    full_name: str = None
+    code: str
+    country: str
+
+
+class TeamModel(Model, TeamBase): ...
+
+
+class TeamList(BaseModel):
+    teams: list[TeamModel]
