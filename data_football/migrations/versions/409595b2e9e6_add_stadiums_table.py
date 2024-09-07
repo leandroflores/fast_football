@@ -1,8 +1,8 @@
 """add stadiums table
 
-Revision ID: be5b7d402265
+Revision ID: 409595b2e9e6
 Revises: 9adea6869a3c
-Create Date: 2024-09-07 01:02:29.859412
+Create Date: 2024-09-07 01:40:44.280523
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = 'be5b7d402265'
+revision: str = '409595b2e9e6'
 down_revision: Union[str, None] = '9adea6869a3c'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -28,6 +28,7 @@ def upgrade() -> None:
     sa.Column('country', sa.String(), nullable=False),
     sa.Column('created_at', sa.DateTime(), server_default=sa.text('(CURRENT_TIMESTAMP)'), nullable=False),
     sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('name')
     )
     # ### end Alembic commands ###
 

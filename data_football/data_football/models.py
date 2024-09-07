@@ -31,3 +31,19 @@ class Stadium:
     created_at: Mapped[datetime] = mapped_column(
         init=False, server_default=func.now()
     )
+
+
+@table_registry.mapped_as_dataclass
+class Championship:
+    __tablename__ = "championships"
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    name: Mapped[str]
+    format: Mapped[str]
+    context: Mapped[str]
+    country: Mapped[str]
+    start_year: Mapped[int]
+    end_year: Mapped[int]
+    created_at: Mapped[datetime] = mapped_column(
+        init=False, server_default=func.now()
+    )

@@ -6,8 +6,15 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from data_football.database import get_session
-from data_football.models import Stadium, User
+from data_football.models import (
+    Championship,
+    Stadium,
+    User,
+)
 from data_football.schemas import (
+    ChampionshipBase,
+    ChampionshipList,
+    ChampionshipModel,
     Message,
     StadiumBase,
     StadiumList,
@@ -74,13 +81,39 @@ def create_stadium(
         session.commit()
         session.refresh(new_stadium)
 
-    except Exception:
+    except IntegrityError:
         session.rollback()
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
             detail="Error to process request",
         )
     return new_stadium
+
+
+@app.post(
+    "/championships/",
+    status_code=HTTPStatus.CREATED,
+    response_model=ChampionshipModel,
+)
+def create_championship(
+    championship: ChampionshipBase, session: Session = Depends(get_session)
+):
+    try:
+        new_championship: Championship = Championship(
+            **championship.model_dump()
+        )
+
+        session.add(new_championship)
+        session.commit()
+        session.refresh(new_championship)
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Error to process request",
+        )
+    return new_championship
 
 
 @app.get("/users/", response_model=UserList)
@@ -101,6 +134,16 @@ def get_stadiums(
         select(Stadium).offset(skip).limit(limit)
     ).all()
     return {"stadiums": stadiums}
+
+
+@app.get("/championships/", response_model=ChampionshipList)
+def get_championships(
+    skip: int = 0, limit: int = 100, session: Session = Depends(get_session)
+):
+    championships: list[Championship] = session.scalars(
+        select(Championship).offset(skip).limit(limit)
+    ).all()
+    return {"championships": championships}
 
 
 @app.get("/users/{user_id}", response_model=UserPublic)
@@ -133,6 +176,22 @@ def get_stadium(
     return stadium_record
 
 
+@app.get("/championships/{championship_id}", response_model=ChampionshipModel)
+def get_championship(
+    championship_id: int,
+    session: Session = Depends(get_session),
+):
+    championship_record = session.scalar(
+        select(Championship).where(Championship.id == championship_id)
+    )
+    if not championship_record:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND, detail="Championship not found"
+        )
+
+    return championship_record
+
+
 @app.put("/users/{user_id}", response_model=UserPublic)
 def update_user(
     user_id: int, user: UserBase, session: Session = Depends(get_session)
@@ -150,7 +209,7 @@ def update_user(
         session.commit()
         session.refresh(user_record)
 
-    except Exception:
+    except IntegrityError:
         session.rollback()
         raise HTTPException(
             HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
@@ -181,13 +240,47 @@ def update_stadium(
         session.commit()
         session.refresh(stadium_record)
 
-    except Exception:
+    except IntegrityError:
         session.rollback()
         raise HTTPException(
             HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
         )
 
     return stadium_record
+
+
+@app.put("/championships/{championship_id}", response_model=ChampionshipModel)
+def update_championship(
+    championship_id: int,
+    championship: ChampionshipBase,
+    session: Session = Depends(get_session),
+):
+    try:
+        championship_record = session.scalar(
+            select(Championship).where(Championship.id == championship_id)
+        )
+        if not championship_record:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail="Championship not found",
+            )
+
+        championship_record.name = championship.name
+        championship_record.format = championship.format
+        championship_record.context = championship.context
+        championship_record.country = championship.country
+        championship_record.start_year = championship.start_year
+        championship_record.end_year = championship.end_year
+        session.commit()
+        session.refresh(championship_record)
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+        )
+
+    return championship_record
 
 
 @app.delete("/users/{user_id}", response_model=Message)
@@ -203,7 +296,7 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
         session.delete(user_record)
         session.commit()
 
-    except Exception:
+    except IntegrityError:
         session.rollback()
         raise HTTPException(
             HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
@@ -227,10 +320,37 @@ def delete_stadium(stadium_id: int, session: Session = Depends(get_session)):
         session.delete(stadium_record)
         session.commit()
 
-    except Exception:
+    except IntegrityError:
         session.rollback()
         raise HTTPException(
             HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
         )
 
     return {"message": "Stadium deleted"}
+
+
+@app.delete("/championships/{championship_id}", response_model=Message)
+def delete_championship(
+    championship_id: int, session: Session = Depends(get_session)
+):
+    try:
+        championship_record = session.scalar(
+            select(Championship).where(Championship.id == championship_id)
+        )
+
+        if not championship_record:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail="Championship not found",
+            )
+
+        session.delete(championship_record)
+        session.commit()
+
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(
+            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+        )
+
+    return {"message": "Championship deleted"}

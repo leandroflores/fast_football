@@ -21,6 +21,9 @@ class UserPublic(Model):
     email: EmailStr
 
 
+class UserModel(Model, UserBase): ...
+
+
 class UserList(BaseModel):
     users: list[UserPublic]
 
@@ -39,11 +42,17 @@ class StadiumList(BaseModel):
     stadiums: list[StadiumModel]
 
 
-class LeagueBase(BaseModel):
+class ChampionshipBase(BaseModel):
     name: str
-    season: str
     format: str
+    context: str
     country: str
+    start_year: int
+    end_year: int
 
 
-class LeagueModel(Model, LeagueBase): ...
+class ChampionshipModel(Model, ChampionshipBase): ...
+
+
+class ChampionshipList(BaseModel):
+    championships: list[ChampionshipModel]
