@@ -2,8 +2,8 @@ import logging
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
-from psycopg import IntegrityError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from football.adapters.database import get_session
@@ -41,8 +41,8 @@ def create_round(
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail="Error to process request",
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
     return new_round
 
@@ -86,14 +86,28 @@ def update_round(
                 status_code=HTTPStatus.NOT_FOUND, detail="Round not found"
             )
 
+        championship = session.scalar(
+            select(Championship).where(
+                Championship.id == record.championship_id
+            )
+        )
+        if not championship:
+            raise HTTPException(
+                status_code=HTTPStatus.NOT_FOUND,
+                detail="Championship not found",
+            )
+
         update_object(record, round.model_dump(exclude_unset=True))
+        record.championship = championship
+
         session.commit()
         session.refresh(record)
 
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
 
     return record
@@ -119,7 +133,8 @@ def delete_round(
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
 
     return {"message": "Round deleted"}

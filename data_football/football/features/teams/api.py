@@ -2,8 +2,8 @@ import logging
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
-from psycopg import IntegrityError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from football.adapters.database import get_session
@@ -23,15 +23,18 @@ logger: logging.Logger = logging.getLogger(__name__)
 @router.post("/", status_code=HTTPStatus.CREATED, response_model=TeamModel)
 def create_team(team: TeamBase, session: Session = Depends(get_session)):
     try:
-        record = session.scalar(
-            select(Team).where(
-                (Team.name == team.name) | (Team.code == team.code)
-            )
-        )
+        record = session.scalar(select(Team).where((Team.name == team.name)))
         if record:
             raise HTTPException(
                 status_code=HTTPStatus.BAD_REQUEST,
-                detail=f"Team '{team.name} [{team.code}]' already exists",
+                detail=f"Team with name '{team.name}' already exists",
+            )
+
+        record = session.scalar(select(Team).where((Team.code == team.code)))
+        if record:
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail=f"Team with code '{team.code}' already exists",
             )
 
         new_team: Team = Team(**team.model_dump())
@@ -44,7 +47,7 @@ def create_team(team: TeamBase, session: Session = Depends(get_session)):
         session.rollback()
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
-            detail="Error to process request",
+            detail="Integrity error to process request",
         )
     return new_team
 
@@ -101,7 +104,8 @@ def update_team(
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
 
     return record
@@ -124,7 +128,8 @@ def delete_team(team_id: int, session: Session = Depends(get_session)):
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
 
     return {"message": "Team deleted"}

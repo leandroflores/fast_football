@@ -2,8 +2,8 @@ import logging
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
-from psycopg import IntegrityError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from football.adapters.database import get_session
@@ -21,7 +21,10 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 @router.post("/", status_code=HTTPStatus.CREATED, response_model=UserPublic)
-def create_user(user: UserBase, session: Session = Depends(get_session)):
+def create_user(
+    user: UserBase,
+    session: Session = Depends(get_session),
+):
     try:
         record = session.scalar(select(User).where(User.email == user.email))
         if record:
@@ -40,7 +43,7 @@ def create_user(user: UserBase, session: Session = Depends(get_session)):
         session.rollback()
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
-            detail="Error to process request",
+            detail="Integrity error to process request",
         )
     return new_user
 
@@ -91,7 +94,8 @@ def update_user(
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
 
     return record
@@ -113,7 +117,8 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
 
     return {"message": "User deleted"}

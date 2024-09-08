@@ -26,6 +26,39 @@ def test_create_stadium(
     assert response.json() == stadium_model
 
 
+def test_create_stadium_with_empty_data(
+    client: TestClient,
+    stadium_url: str,
+):
+    # Act
+    response: Response = client.post(
+        stadium_url,
+        json={},
+    )
+
+    # Assert
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+
+
+def test_create_stadium_with_repeated_name(
+    client: TestClient,
+    stadium_url: str,
+    stadium_base: dict,
+    stadium: Stadium,
+):
+    # Act
+    response: Response = client.post(
+        stadium_url,
+        json=stadium_base,
+    )
+
+    # Assert
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.json() == {
+        "detail": f"Stadium '{stadium_base["name"]}' already exists"
+    }
+
+
 def test_get_stadium(
     client: TestClient,
     stadium_url: str,
@@ -41,6 +74,22 @@ def test_get_stadium(
     # Assert
     assert response.status_code == HTTPStatus.OK
     assert response.json() == stadium_model
+
+
+def test_get_not_found_stadium(
+    client: TestClient,
+    stadium_url: str,
+    stadium: Stadium,
+):
+    # Arrange
+    stadium_id: int = -1
+
+    # Act
+    response: Response = client.get(f"{stadium_url}{stadium_id}")
+
+    # Assert
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": "Stadium not found"}
 
 
 def test_get_stadiums_with_result(
@@ -93,6 +142,29 @@ def test_update_stadium(
     assert response.json() == stadium_result
 
 
+def test_update_with_not_found_stadium(
+    client: TestClient,
+    stadium_url: str,
+    stadium_base: dict,
+    stadium: Stadium,
+):
+    # Arrange
+    id_stadium: int = -1
+    stadium_modified: dict = deepcopy(stadium_base)
+    stadium_modified["name"] = random_str()
+    stadium_modified["capacity"] = random_int()
+
+    # Act
+    response: Response = client.put(
+        f"{stadium_url}{id_stadium}",
+        json=stadium_modified,
+    )
+
+    # Assert
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": "Stadium not found"}
+
+
 def test_delete_stadium(
     client: TestClient,
     stadium_url: str,
@@ -108,3 +180,19 @@ def test_delete_stadium(
     # Assert
     assert response.status_code == HTTPStatus.OK
     assert response.json() == stadium_delete_message
+
+
+def test_delete_not_found_stadium(
+    client: TestClient,
+    stadium_url: str,
+    stadium: Stadium,
+):
+    # Arrange
+    stadium_id: int = -1
+
+    # Act
+    response: Response = client.delete(f"{stadium_url}{stadium_id}")
+
+    # Assert
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": "Stadium not found"}

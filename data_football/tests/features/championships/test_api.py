@@ -43,23 +43,6 @@ def test_create_championship_with_empty_data(
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
 
 
-def test_create_championship_with_error(
-    client: TestClient,
-    championship_url: str,
-):
-    # Arrange
-    incomplete_championship: dict = {"name": random_str()}
-
-    # Act
-    response: Response = client.post(
-        championship_url,
-        json=incomplete_championship,
-    )
-
-    # Assert
-    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-
-
 def test_get_championship(
     client: TestClient,
     championship_url: str,
@@ -77,6 +60,22 @@ def test_get_championship(
     # Assert
     assert response.status_code == HTTPStatus.OK
     assert response.json() == championship_model
+
+
+def test_get_championship_with_error(
+    client: TestClient,
+    championship_url: str,
+    championship: Championship,
+):
+    # Arrange
+    championship_id: int = -1
+
+    # Act
+    response: Response = client.get(f"{championship_url}{championship_id}")
+
+    # Assert
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": "Championship not found"}
 
 
 def test_get_championships_with_result(
@@ -134,6 +133,28 @@ def test_update_championship(
     assert response.json() == championship_result
 
 
+def test_update_championship_with_error(
+    client: TestClient,
+    championship_url: str,
+    championship_base: dict,
+    championship: Championship,
+):
+    # Arrange
+    championship_id: int = -1
+    championship_modified: dict = deepcopy(championship_base)
+    championship_modified["name"] = random_str()
+
+    # Act
+    response: Response = client.put(
+        f"{championship_url}{championship_id}",
+        json=championship_modified,
+    )
+
+    # Assert
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": "Championship not found"}
+
+
 def test_delete_championship(
     client: TestClient,
     championship_url: str,
@@ -149,3 +170,20 @@ def test_delete_championship(
     # Assert
     assert response.status_code == HTTPStatus.OK
     assert response.json() == championship_delete_message
+
+
+def test_delete_championship_with_error(
+    client: TestClient,
+    championship_url: str,
+    championship_delete_message: str,
+    championship: Championship,
+):
+    # Arrange
+    championship_id: int = -1
+
+    # Act
+    response: Response = client.delete(f"{championship_url}{championship_id}")
+
+    # Assert
+    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.json() == {"detail": "Championship not found"}

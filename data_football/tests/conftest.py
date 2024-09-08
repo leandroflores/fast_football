@@ -1,4 +1,5 @@
 from copy import deepcopy
+from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -9,6 +10,8 @@ from sqlalchemy.pool import StaticPool
 from football.adapters.database import get_session
 from football.adapters.models import (
     Championship,
+    Match,
+    # Player,
     Round,
     Stadium,
     Team,
@@ -261,3 +264,133 @@ def round_model(round_mock: dict) -> dict:
 @pytest.fixture
 def round_delete_message() -> dict:
     return {"message": "Round deleted"}
+
+
+@pytest.fixture
+def match_url() -> str:
+    return "/matches/"
+
+
+@pytest.fixture
+def away_team_mock() -> dict:
+    return {
+        "id": 2,
+        "name": random_str(),
+        "full_name": random_str(),
+        "code": random_str(3),
+        "country": random_str(),
+    }
+
+
+@pytest.fixture
+def away_team_base(away_team_mock: dict) -> dict:
+    base_: dict = deepcopy(away_team_mock)
+    del base_["id"]
+    return base_
+
+
+@pytest.fixture
+def away_team_model(away_team_mock: dict) -> dict:
+    return deepcopy(away_team_mock)
+
+
+@pytest.fixture
+def away_team(session: Session, away_team_base: dict) -> Team:
+    team: Team = Team(**away_team_base)
+    session.add(team)
+    session.commit()
+    session.refresh(team)
+    return team
+
+
+@pytest.fixture
+def match_mock(
+    stadium_model: dict,
+    round_model: dict,
+    team_model: dict,
+    away_team_model: dict,
+) -> dict:
+    return {
+        "id": 1,
+        "date": datetime.now(),
+        "goals_home": random_int(0, 3),
+        "goals_away": random_int(0, 3),
+        "extra_time": False,
+        "goals_extra_time_home": 0,
+        "goals_extra_time_away": 0,
+        "penalty": False,
+        "goals_penalty_home": 0,
+        "goals_penalty_away": 0,
+        "stadium_id": stadium_model["id"],
+        "round_id": round_model["id"],
+        "home_team_id": team_model["id"],
+        "away_team_id": away_team_model["id"],
+    }
+
+
+@pytest.fixture
+def match(session: Session, match_base: dict) -> Match:
+    match: Match = Match(**match_base)
+    session.add(match)
+    session.commit()
+    session.refresh(match)
+    return match
+
+
+@pytest.fixture
+def match_base(match_mock: dict) -> dict:
+    base_: dict = deepcopy(match_mock)
+    del base_["id"]
+    return base_
+
+
+@pytest.fixture
+def match_model(match_mock: dict) -> dict:
+    return deepcopy(match_mock)
+
+
+@pytest.fixture
+def match_delete_message() -> dict:
+    return {"message": "Match deleted"}
+
+
+# @pytest.fixture
+# def player_url() -> str:
+#     return "/players/"
+
+
+# @pytest.fixture
+# def player_mock(team_mock: dict) -> dict:
+#     return {
+#         "id": 1,
+#         "name": random_str(),
+#         "full_name": random_str(),
+#         "birth_date": datetime.now(),
+#         "current_team_id": team_mock["id"],
+#     }
+
+
+# @pytest.fixture
+# def player(session: Session, player_base: dict) -> Player:
+#     player: Player = Player(**player_base)
+#     session.add(player)
+#     session.commit()
+#     session.refresh(player)
+#     return player
+
+
+# @pytest.fixture
+# def player_base(player_mock: dict) -> dict:
+#     base_: dict = deepcopy(player_mock)
+#     del base_["id"]
+#     return base_
+
+
+# @pytest.fixture
+# def player_model(player_mock: dict) -> dict:
+#     return deepcopy(player_mock)
+
+
+# @pytest.fixture
+# def player_delete_message() -> dict:
+#     return {"message": "Player deleted"}

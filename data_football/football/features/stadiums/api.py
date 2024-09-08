@@ -2,8 +2,8 @@ import logging
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
-from psycopg import IntegrityError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from football.adapters.database import get_session
@@ -45,7 +45,7 @@ def create_stadium(
         session.rollback()
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
-            detail="Error to process request",
+            detail="Integrity error to process request",
         )
     return new_stadium
 
@@ -76,7 +76,8 @@ def get_stadium(
     record = session.scalar(select(Stadium).where(Stadium.id == stadium_id))
     if not record:
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND, detail="Stadium not found"
+            status_code=HTTPStatus.NOT_FOUND,
+            detail="Stadium not found",
         )
 
     return record
@@ -94,7 +95,8 @@ def update_stadium(
         )
         if not record:
             raise HTTPException(
-                status_code=HTTPStatus.NOT_FOUND, detail="Stadium not found"
+                status_code=HTTPStatus.NOT_FOUND,
+                detail="Stadium not found",
             )
 
         update_object(record, stadium.model_dump(exclude_unset=True))
@@ -104,7 +106,8 @@ def update_stadium(
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
 
     return record
@@ -131,7 +134,8 @@ def delete_stadium(
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
 
     return {"message": "Stadium deleted"}

@@ -2,8 +2,8 @@ import logging
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, HTTPException
-from psycopg import IntegrityError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from football.adapters.database import get_session
@@ -28,6 +28,9 @@ def create_championship(
     session: Session = Depends(get_session),
 ):
     try:
+        print("0" * 50)
+        print(championship)
+        print("0" * 50)
         new_championship: Championship = Championship(
             **championship.model_dump()
         )
@@ -39,8 +42,8 @@ def create_championship(
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            status_code=HTTPStatus.NOT_FOUND,
-            detail="Error to process request",
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail="Integrity error to process request",
         )
     return new_championship
 
@@ -105,7 +108,8 @@ def update_championship(
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
 
     return record
@@ -132,7 +136,8 @@ def delete_championship(
     except IntegrityError:
         session.rollback()
         raise HTTPException(
-            HTTPStatus.INTERNAL_SERVER_ERROR, detail="Error to process request"
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+            detail="Integrity error to process request",
         )
 
     return {"message": "Championship deleted"}

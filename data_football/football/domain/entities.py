@@ -1,4 +1,10 @@
-from pydantic import BaseModel, ConfigDict, EmailStr
+from datetime import datetime
+
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+)
 
 
 class Message(BaseModel):
@@ -83,3 +89,56 @@ class RoundModel(Model, RoundBase): ...
 
 class RoundList(BaseModel):
     rounds: list[RoundModel]
+
+
+class MatchBase(BaseModel):
+    date: datetime
+    goals_home: int
+    goals_away: int
+    extra_time: bool = False
+    goals_extra_time_home: int = 0
+    goals_extra_time_away: int = 0
+    penalty: bool = False
+    goals_penalty_home: int = 0
+    goals_penalty_away: int = 0
+    stadium_id: int
+    round_id: int
+    home_team_id: int
+    away_team_id: int
+
+
+class MatchModel(Model, MatchBase): ...
+
+
+class MatchList(BaseModel):
+    players: list[MatchModel]
+
+
+class PlayerBase(BaseModel):
+    name: str
+    full_name: str
+    country: str
+    birth_date: datetime = None
+    current_team_id: int
+
+
+class PlayerModel(Model, PlayerBase): ...
+
+
+class PlayerList(BaseModel):
+    players: list[PlayerModel]
+
+
+class GoalBase(BaseModel):
+    minute: int
+    owngoal: bool = False
+    match_id: int
+    team_id: int
+    player_id: int
+
+
+class GoalModel(Model, GoalBase): ...
+
+
+class GoalList(BaseModel):
+    goals: list[GoalModel]
