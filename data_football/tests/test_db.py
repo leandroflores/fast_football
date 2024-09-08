@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from data_football import models
+from data_football.db import models
 
 
 def test_create_user(user_model: dict, session: Session):

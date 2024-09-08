@@ -5,7 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from data_football.models import table_registry
+from data_football.db.models import table_registry
 from data_football.settings import Settings
 
 # this is the Alembic Config object, which provides

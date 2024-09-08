@@ -5,8 +5,8 @@ from psycopg import IntegrityError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from data_football.database import get_session
-from data_football.models import (
+from data_football.db.database import get_session
+from data_football.db.models import (
     Championship,
     Round,
     Stadium,

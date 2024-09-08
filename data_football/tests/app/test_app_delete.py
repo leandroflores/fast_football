@@ -3,7 +3,7 @@ from http import HTTPStatus
 from fastapi.testclient import TestClient
 from httpx import Response
 
-from data_football.models import (
+from data_football.db.models import (
     Championship,
     Round,
     Stadium,

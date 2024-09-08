@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from data_football.app import app
-from data_football.database import get_session
-from data_football.models import (
+from data_football.db.database import get_session
+from data_football.db.models import (
     Championship,
     Round,
     Stadium,

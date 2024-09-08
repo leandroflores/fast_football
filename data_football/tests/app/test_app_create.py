@@ -3,7 +3,7 @@ from http import HTTPStatus
 from fastapi.testclient import TestClient
 from httpx import Response
 
-from data_football.models import Championship
+from data_football.db.models import Championship
 
 
 def test_create_user(
