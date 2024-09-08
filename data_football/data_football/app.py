@@ -157,9 +157,13 @@ def create_team(team: TeamBase, session: Session = Depends(get_session)):
 )
 def create_round(round: RoundBase, session: Session = Depends(get_session)):
     try:
-        new_round: Round = Round(
-            **round.model_dump(exclude=["championship_id"])
-        )
+        new_round: Round = Round(**round.model_dump())
+        championship = session.scalars(
+            select(Championship).where(
+                Championship.id == round.championship_id
+            )
+        ).first()
+        new_round.championship = championship
 
         session.add(new_round)
         session.commit()

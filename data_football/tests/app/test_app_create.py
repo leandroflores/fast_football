@@ -3,6 +3,8 @@ from http import HTTPStatus
 from fastapi.testclient import TestClient
 from httpx import Response
 
+from data_football.models import Championship
+
 
 def test_create_user(
     client: TestClient,
@@ -77,6 +79,7 @@ def test_create_round(
     round_url: str,
     round_base: dict,
     round_model: dict,
+    championship: Championship,
 ):
     # Act
     response: Response = client.post(

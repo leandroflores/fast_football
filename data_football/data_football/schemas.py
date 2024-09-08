@@ -75,7 +75,7 @@ class TeamList(BaseModel):
 class RoundBase(BaseModel):
     phase: str
     details: str = None
-    championship: ChampionshipModel
+    championship_id: int
 
 
 class RoundModel(Model, RoundBase): ...

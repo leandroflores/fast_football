@@ -233,7 +233,7 @@ def round_mock(championship_model: dict) -> dict:
         "id": 1,
         "phase": random_str(),
         "details": random_str(),
-        "championship": championship_model,
+        "championship_id": championship_model["id"],
     }
 
 
