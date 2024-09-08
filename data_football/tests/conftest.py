@@ -6,9 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from data_football.app import app
-from data_football.db.database import get_session
-from data_football.db.models import (
+from football.adapters.database import get_session
+from football.adapters.models import (
     Championship,
     Round,
     Stadium,
@@ -16,7 +15,8 @@ from data_football.db.models import (
     User,
     table_registry,
 )
-from data_football.utils import random_int, random_str
+from football.app import app
+from football.utils import random_int, random_str
 
 
 @pytest.fixture

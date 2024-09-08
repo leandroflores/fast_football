@@ -4,14 +4,14 @@ from http import HTTPStatus
 from fastapi.testclient import TestClient
 from httpx import Response
 
-from data_football.db.models import (
+from football.adapters.models import (
     Championship,
     Round,
     Stadium,
     Team,
     User,
 )
-from data_football.utils import random_int, random_str
+from football.utils import random_int, random_str
 
 
 def test_update_user(
