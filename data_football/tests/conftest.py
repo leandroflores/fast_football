@@ -312,7 +312,7 @@ def match_mock(
 ) -> dict:
     return {
         "id": 1,
-        "date": datetime.now(),
+        "date_hour": datetime.now().isoformat(),
         "goals_home": random_int(0, 3),
         "goals_away": random_int(0, 3),
         "extra_time": False,

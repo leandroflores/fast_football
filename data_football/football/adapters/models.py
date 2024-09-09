@@ -134,7 +134,7 @@ class Match:
     __tablename__ = "matches"
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
-    date: Mapped[datetime]
+    date_hour: Mapped[str]
     goals_home: Mapped[int]
     goals_away: Mapped[int]
     extra_time: Mapped[bool]

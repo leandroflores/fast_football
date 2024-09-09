@@ -5,6 +5,7 @@ from football.domain.entities import (
 )
 from football.features import (
     championships,
+    matches,
     rounds,
     stadiums,
     teams,
@@ -14,6 +15,7 @@ from football.features import (
 app: FastAPI = FastAPI()
 
 app.include_router(championships.router)
+app.include_router(matches.router)
 app.include_router(rounds.router)
 app.include_router(stadiums.router)
 app.include_router(teams.router)

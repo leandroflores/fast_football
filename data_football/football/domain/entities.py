@@ -92,7 +92,7 @@ class RoundList(BaseModel):
 
 
 class MatchBase(BaseModel):
-    date: datetime
+    date_hour: str
     goals_home: int
     goals_away: int
     extra_time: bool = False
@@ -111,7 +111,7 @@ class MatchModel(Model, MatchBase): ...
 
 
 class MatchList(BaseModel):
-    players: list[MatchModel]
+    matches: list[MatchModel]
 
 
 class PlayerBase(BaseModel):
