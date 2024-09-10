@@ -235,12 +235,21 @@ class Goal:
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     minute: Mapped[int]
-    own_goal: Mapped[bool] = mapped_column(default=False)
+    own_goal: Mapped[bool]
 
     # Foreign Keys
-    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"))
-    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"))
-    player_id: Mapped[int] = mapped_column(ForeignKey("players.id"))
+    match_id: Mapped[int] = mapped_column(
+        ForeignKey("matches.id"),
+        nullable=False,
+    )
+    team_id: Mapped[int] = mapped_column(
+        ForeignKey("teams.id"),
+        nullable=False,
+    )
+    player_id: Mapped[int] = mapped_column(
+        ForeignKey("players.id"),
+        nullable=False,
+    )
 
     # Associations
     match: Mapped[Match] = relationship(

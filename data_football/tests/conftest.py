@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 from football.adapters.database import get_session
 from football.adapters.models import (
     Championship,
+    Goal,
     Match,
     Player,
     Round,
@@ -395,3 +396,46 @@ def player_model(player_mock: dict) -> dict:
 @pytest.fixture
 def player_delete_message() -> dict:
     return {"message": "Player deleted"}
+
+
+@pytest.fixture
+def goal_url() -> str:
+    return "/goals/"
+
+
+@pytest.fixture
+def goal_mock(match_mock: dict, player_mock: dict) -> dict:
+    return {
+        "id": 1,
+        "minute": random_int(0, 90),
+        "own_goal": False,
+        "match_id": match_mock["id"],
+        "team_id": player_mock["current_team_id"],
+        "player_id": player_mock["id"],
+    }
+
+
+@pytest.fixture
+def goal(session: Session, goal_base: dict) -> Player:
+    goal: Goal = Goal(**goal_base)
+    session.add(goal)
+    session.commit()
+    session.refresh(goal)
+    return goal
+
+
+@pytest.fixture
+def goal_base(goal_mock: dict) -> dict:
+    base_: dict = deepcopy(goal_mock)
+    del base_["id"]
+    return base_
+
+
+@pytest.fixture
+def goal_model(goal_mock: dict) -> dict:
+    return deepcopy(goal_mock)
+
+
+@pytest.fixture
+def goal_delete_message() -> dict:
+    return {"message": "Goal deleted"}
