@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -118,7 +116,7 @@ class PlayerBase(BaseModel):
     name: str
     full_name: str
     country: str
-    birth_date: datetime = None
+    birth_date: str = ""
     current_team_id: int
 
 

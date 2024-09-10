@@ -92,11 +92,16 @@ class Team:
         back_populates="away_team",
         cascade="all, delete-orphan",
     )
-    # goals: Mapped[list["Goal"]] = relationship(
-    #     init=False,
-    #     back_populates="team",
-    #     lazy="noload",
-    # )
+    players: Mapped[list["Player"]] = relationship(
+        init=False,
+        back_populates="current_team",
+        lazy="select",
+    )
+    goals: Mapped[list["Goal"]] = relationship(
+        init=False,
+        back_populates="team",
+        lazy="noload",
+    )
 
 
 @table_registry.mapped_as_dataclass
@@ -169,7 +174,7 @@ class Match:
     round: Mapped[Round] = relationship(
         init=False,
         back_populates="matches",
-        lazy="immediate",
+        lazy="select",
     )
     home_team: Mapped[Team] = relationship(
         "Team",
@@ -186,71 +191,70 @@ class Match:
         lazy="noload",
     )
 
-
-#     # Reverses
-#     goals: Mapped[list["Goal"]] = relationship(
-#         init=False,
-#         back_populates="match",
-#         cascade="all, delete-orphan",
-#     )
-
-
-# @table_registry.mapped_as_dataclass
-# class Player:
-#     __tablename__ = "players"
-
-#     id: Mapped[int] = mapped_column(init=False, primary_key=True)
-#     name: Mapped[str]
-#     full_name: Mapped[str]
-#     country: Mapped[str]
-#     birth_date: Mapped[Optional[datetime]]
-
-#     # Foreign Keys
-#     current_team_id: Mapped[int] = mapped_column(
-#         ForeignKey("teams.id"), nullable=False
-#     )
-
-#     # Associations
-#     current_team: Mapped[Team] = relationship(
-#         init=False,
-#         back_populates="players",
-#         lazy="immediate",
-#     )
-
-#     # Reverses
-#     goals: Mapped[list["Goal"]] = relationship(
-#         init=False,
-#         back_populates="player",
-#         lazy="noload",
-#     )
+    # Reverses
+    goals: Mapped[list["Goal"]] = relationship(
+        init=False,
+        back_populates="match",
+        cascade="all, delete-orphan",
+    )
 
 
-# @table_registry.mapped_as_dataclass
-# class Goal:
-#     __tablename__ = "goals"
+@table_registry.mapped_as_dataclass
+class Player:
+    __tablename__ = "players"
 
-#     id: Mapped[int] = mapped_column(init=False, primary_key=True)
-#     minute: Mapped[int]
-#     own_goal: Mapped[bool]
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    name: Mapped[str]
+    full_name: Mapped[str]
+    country: Mapped[str]
+    birth_date: Mapped[Optional[str]]
 
-#     # Foreign Keys
-#     match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"))
-#     team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"))
-#     player_id: Mapped[int] = mapped_column(ForeignKey("players.id"))
+    # Foreign Keys
+    current_team_id: Mapped[int] = mapped_column(
+        ForeignKey("teams.id"), nullable=False
+    )
 
-#     # Associations
-#     match: Mapped[Match] = relationship(
-#         init=False,
-#         back_populates="goals",
-#         lazy="immediate",
-#     )
-#     team: Mapped[Team] = relationship(
-#         init=False,
-#         back_populates="goals",
-#         lazy="noload",
-#     )
-#     player: Mapped[Player] = relationship(
-#         init=False,
-#         back_populates="goals",
-#         lazy="noload",
-#     )
+    # Associations
+    current_team: Mapped[Team] = relationship(
+        init=False,
+        back_populates="players",
+        lazy="immediate",
+    )
+
+    # Reverses
+    goals: Mapped[list["Goal"]] = relationship(
+        init=False,
+        back_populates="player",
+        lazy="noload",
+    )
+
+
+@table_registry.mapped_as_dataclass
+class Goal:
+    __tablename__ = "goals"
+
+    id: Mapped[int] = mapped_column(init=False, primary_key=True)
+    minute: Mapped[int]
+    own_goal: Mapped[bool] = mapped_column(default=False)
+
+    # Foreign Keys
+    match_id: Mapped[int] = mapped_column(ForeignKey("matches.id"))
+    team_id: Mapped[int] = mapped_column(ForeignKey("teams.id"))
+    player_id: Mapped[int] = mapped_column(ForeignKey("players.id"))
+
+    # Associations
+    match: Mapped[Match] = relationship(
+        init=False,
+        back_populates="goals",
+        lazy="select",
+    )
+    team: Mapped[Team] = relationship(
+        init=False,
+        back_populates="goals",
+        lazy="noload",
+    )
+    player: Mapped[Player] = relationship(
+        init=False,
+        back_populates="goals",
+        lazy="noload",
+    )

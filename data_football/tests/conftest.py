@@ -11,7 +11,7 @@ from football.adapters.database import get_session
 from football.adapters.models import (
     Championship,
     Match,
-    # Player,
+    Player,
     Round,
     Stadium,
     Team,
@@ -354,43 +354,44 @@ def match_delete_message() -> dict:
     return {"message": "Match deleted"}
 
 
-# @pytest.fixture
-# def player_url() -> str:
-#     return "/players/"
+@pytest.fixture
+def player_url() -> str:
+    return "/players/"
 
 
-# @pytest.fixture
-# def player_mock(team_mock: dict) -> dict:
-#     return {
-#         "id": 1,
-#         "name": random_str(),
-#         "full_name": random_str(),
-#         "birth_date": datetime.now(),
-#         "current_team_id": team_mock["id"],
-#     }
+@pytest.fixture
+def player_mock(team_mock: dict) -> dict:
+    return {
+        "id": 1,
+        "name": random_str(),
+        "full_name": random_str(),
+        "country": random_str(),
+        "birth_date": datetime.now().date().isoformat(),
+        "current_team_id": team_mock["id"],
+    }
 
 
-# @pytest.fixture
-# def player(session: Session, player_base: dict) -> Player:
-#     player: Player = Player(**player_base)
-#     session.add(player)
-#     session.commit()
-#     session.refresh(player)
-#     return player
+@pytest.fixture
+def player(session: Session, player_base: dict) -> Player:
+    player: Player = Player(**player_base)
+    session.add(player)
+    session.commit()
+    session.refresh(player)
+    return player
 
 
-# @pytest.fixture
-# def player_base(player_mock: dict) -> dict:
-#     base_: dict = deepcopy(player_mock)
-#     del base_["id"]
-#     return base_
+@pytest.fixture
+def player_base(player_mock: dict) -> dict:
+    base_: dict = deepcopy(player_mock)
+    del base_["id"]
+    return base_
 
 
-# @pytest.fixture
-# def player_model(player_mock: dict) -> dict:
-#     return deepcopy(player_mock)
+@pytest.fixture
+def player_model(player_mock: dict) -> dict:
+    return deepcopy(player_mock)
 
 
-# @pytest.fixture
-# def player_delete_message() -> dict:
-#     return {"message": "Player deleted"}
+@pytest.fixture
+def player_delete_message() -> dict:
+    return {"message": "Player deleted"}
