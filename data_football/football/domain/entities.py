@@ -129,7 +129,7 @@ class PlayerList(BaseModel):
 
 class GoalBase(BaseModel):
     minute: int
-    owngoal: bool = False
+    own_goal: bool = False
     match_id: int
     team_id: int
     player_id: int

@@ -11,7 +11,6 @@ from football.adapters.models import (
     Goal,
     Match,
     Player,
-    Team,
 )
 from football.domain.entities import (
     GoalBase,
@@ -130,7 +129,7 @@ def update_goal(
                 detail="Player not found",
             )
 
-        update_object(record, match.model_dump(exclude_unset=True))
+        update_object(record, goal.model_dump(exclude_unset=True))
         record.match = match
         record.team = player.current_team
         record.player = player
