@@ -8,6 +8,9 @@
 A aplicação define as seguintes entidades:
 - Campeonato (*Championship*)
 - Estádio (*Stadium*)
+- Gol (*Goal*)
+- Jogador (*Player*)
+- Partida (*Match*)
 - Rodada (*Round*)
 - Time (*Team*)
 - Usuário (*User*)
